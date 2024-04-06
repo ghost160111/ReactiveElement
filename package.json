@@ -1,0 +1,24 @@
+{
+  "name": "reactive-web-component",
+  "version": "1.0.3",
+  "description": "",
+  "type": "module",
+  "main": "ReactiveWebComponent.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["reactive-element", "ts", "js", "reactivity"],
+  "author": "Jaloliddin",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ghost160111/ReactiveElement"
+  },
+  "bugs": {
+    "url": "https://github.com/ghost160111/ReactiveElement/issues"
+  },
+  "homepage": "https://github.com/ghost160111/ReactiveElement#readme"
+}
