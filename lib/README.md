@@ -1,4 +1,4 @@
-# Name the Library
+# ReactiveElement
 
 For now, the name of library is CustomElement, but you need to change the name of the library to something like UICustom, FlexyUI, or FlexyUIComponent and so on...
 
