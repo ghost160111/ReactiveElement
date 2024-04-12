@@ -41,7 +41,6 @@ export default class BaseHandler extends BaseComponent {
   protected destroyStateHandler(): void {
     if (this.context.stateHandler) {
       this.context.stateHandler.disconnectedCallback();
-      this.context.stateHandler = null;
     }
   }
 

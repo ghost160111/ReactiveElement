@@ -1,8 +1,14 @@
 import BaseComponent from "./BaseComponent";
 
+type StyleSheet = {
+  css: string;
+  sass: string;
+}
+
 export default class StyleHandler extends BaseComponent {
   public hostStylesheet: CSSStyleSheet;
-  public stylesheet: CSSStyleSheet;
+  public cssStylesheet: CSSStyleSheet;
+  public sassStylesheet: CSSStyleSheet;
 
   protected hostBaseStyle: string = /*css*/`
     :host {
@@ -14,25 +20,30 @@ export default class StyleHandler extends BaseComponent {
     super(context);
 
     this.hostStylesheet = new CSSStyleSheet();
-    this.stylesheet = new CSSStyleSheet();
 
     this.hostStylesheet.replaceSync(this.hostBaseStyle);
   }
 
-  protected setupStylesheet(styles: string) {
+  protected setupStylesheet(styles: string, type?: keyof StyleSheet) {
     if (!styles) throw "Styles is empty, enter your styles in string value!";
     if (typeof styles !== "string") throw "Styles should be string type!";
 
-    this.stylesheet.replaceSync(styles);
+    if (type === "css") {
+      this.cssStylesheet = new CSSStyleSheet();
+      this.cssStylesheet.replaceSync(styles);
+    } else if (type === "sass") {
+      this.sassStylesheet = new CSSStyleSheet();
+      this.sassStylesheet.replaceSync(styles);
+    }
   }
 
   public setupCSS(css: string): void {
-    this.setupStylesheet(css);
+    this.setupStylesheet(css, "css");
   }
 
   public setupSASS(sass: string): void {
     let compiledSASS = this.getImportedSASS(sass);
-    this.setupStylesheet(compiledSASS);
+    this.setupStylesheet(compiledSASS, "sass");
   }
 
   public getImportedSASS(importedSASS: any): string {
@@ -41,7 +52,8 @@ export default class StyleHandler extends BaseComponent {
 
   public disconnectedCallback(): void {
     this.hostStylesheet = null;
-    this.stylesheet = null;
+    this.cssStylesheet = null;
+    this.sassStylesheet = null;
 
     for (let i = 0; i < this.context.$root.adoptedStyleSheets.length; ++i) {
       let adoptedStyleSheet = this.context.$root.adoptedStyleSheets[i];

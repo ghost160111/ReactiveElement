@@ -20,17 +20,17 @@ const defaultConfig: ISetupConfig = {
 }
 
 class CustomElement {
-  public static AnimationHandler = AnimationHandler;
-  public static BaseHandler = BaseHandler;
-  public static EventHandler = EventHandler;
-  public static ShadowDOMHandler = ShadowDOMHandler;
-  public static StateHandler = StateHandler;
-  public static StyleHandler = StyleHandler;
-  public static CustomHTMLElement = CustomHTMLElement;
-  public static defaultConfig: ISetupConfig = defaultConfig;
+  public static readonly AnimationHandler = AnimationHandler;
+  public static readonly BaseHandler = BaseHandler;
+  public static readonly EventHandler = EventHandler;
+  public static readonly ShadowDOMHandler = ShadowDOMHandler;
+  public static readonly StateHandler = StateHandler;
+  public static readonly StyleHandler = StyleHandler;
+  public static readonly CustomHTMLElement = CustomHTMLElement;
+  public static readonly defaultConfig: ISetupConfig = defaultConfig;
 }
 
-const DefineComponent = (tagName: string | IComponentOptions, componentClass: CustomElementConstructor) => {
+const DefineComponent = (tagName: string | IComponentOptions, componentClass?: CustomElementConstructor) => {
   if (typeof tagName === "string") {
     window.customElements.define(tagName, componentClass);
   }

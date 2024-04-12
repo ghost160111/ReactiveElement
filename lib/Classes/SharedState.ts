@@ -14,8 +14,8 @@ export default class SharedState {
     });
   }
 
-  public async getComponent(name: any): Promise<CustomElementConstructor> {
-    return new Promise<CustomElementConstructor>((resolve: (value: CustomElementConstructor) => void, reject: (reason?: any) => void): void => {
+  public async getComponent(name: any): Promise<HTMLElement> {
+    return new Promise<HTMLElement>((resolve: (value: HTMLElement) => void, reject: (reason?: any) => void): void => {
       const checkComponent = (): void => {
         if (this.components[name] !== undefined) {
           resolve(this.components[name]);

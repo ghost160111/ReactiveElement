@@ -1,4 +1,3 @@
-import { sharedState } from "../../../components/SharedState";
 import PopupContentHandler from "../Components/PopupContentHandler";
 import {
   BaseHandler,
@@ -13,6 +12,15 @@ import {
 } from "../CustomElement";
 import SharedState from "./SharedState";
 
+/**
+ * @description
+ * SharedState is speacial object that simply shares the reference of all registered components through member variable defined in CustomHTMLElement base class.
+ *
+ * @example
+ * console.log(this.sharedState.components); // SharedState { components:{...} }
+ */
+const sharedState = new SharedState();
+
 interface UpdateChangedOptions {
   name: string;
   attrName: string;
@@ -21,6 +29,8 @@ interface UpdateChangedOptions {
   callback: CallableFunction;
   timeout?: number;
 }
+
+type Watcher = Record<string, (newValue: any, oldValue: any) => void>;
 
 export default class CustomHTMLElement extends HTMLElement implements ICustomElement {
   public base: BaseHandler;
@@ -37,19 +47,20 @@ export default class CustomHTMLElement extends HTMLElement implements ICustomEle
   protected refs: {};
   public componentID: string;
   public eventHandlers: Record<string, Map<string | symbol, EventListener>>;
+
   protected componentConfig: ISetupConfig;
   protected controller: AbortController;
   protected components: Record<string, HTMLElement | InstanceType<CustomElementConstructor>>;
   protected devMode: boolean;
-
   protected sharedState: SharedState;
 
-  public _data: {}
-  public data: {} = {}
-  public refProxy: {}
+  public data: {};
+  public refProxy: {};
+  public watch: Watcher;
 
   constructor(setupConfig?: ISetupConfig, components?: {}) {
     super();
+    this.data = {};
     sharedState.setComponent(this, this.tagName.toLowerCase());
     this.constructComponent(setupConfig, components);
   }
@@ -60,6 +71,8 @@ export default class CustomHTMLElement extends HTMLElement implements ICustomEle
    */
   private constructComponent(setupConfig?: ISetupConfig, components?: {}): void {
     this.setupShadow();
+
+    this.style.transition = "all 300ms ease";
 
     this.eventHandlers = {};
     this.controller = new AbortController();
@@ -125,16 +138,24 @@ export default class CustomHTMLElement extends HTMLElement implements ICustomEle
 
       if (setupConfig.styles) {
         if (setupConfig.styles.css || setupConfig.styles.sass) {
+          this.$root.adoptedStyleSheets = [ this.styles.hostStylesheet ];
+
           if (setupConfig.styles.css) {
             this.styles.setupCSS(setupConfig.styles.css);
           } else if (setupConfig.styles.sass) {
             this.styles.setupSASS(setupConfig.styles.sass);
+          } else if (setupConfig.styles.css && setupConfig.styles.sass) {
+            this.styles.setupCSS(setupConfig.styles.css);
+            this.styles.setupSASS(setupConfig.styles.sass);
           }
 
-          this.$root.adoptedStyleSheets = [
-            this.styles.hostStylesheet,
-            this.styles.stylesheet
-          ];
+          if (this.styles.cssStylesheet) {
+            this.$root.adoptedStyleSheets.push(this.styles.cssStylesheet);
+          }
+
+          if (this.styles.sassStylesheet) {
+            this.$root.adoptedStyleSheets.push(this.styles.sassStylesheet);
+          }
         }
       }
 
@@ -268,7 +289,7 @@ export default class CustomHTMLElement extends HTMLElement implements ICustomEle
    * This method shows element, if it hidden
    */
   public show(): void {
-    this.style.opacity = "0";
+    this.style.opacity = "1";
     this.style.display = "";
     this.style.visibility = "visible";
   }

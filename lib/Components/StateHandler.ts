@@ -5,104 +5,95 @@ export default class StateHandler extends BaseComponent {
     super(context);
   }
 
-  protected refDataNodeList: NodeListOf<HTMLElement>;
-
-  private watchers: { [key: string]: (newValue: any, oldValue: any) => void } = {};
+  public refDataNodeList: NodeListOf<HTMLElement>;
+  public _watch: Record<string, (newValue: any, oldValue: any) => void>;
+  public watchers: { [key: string]: (newValue: any, oldValue: any) => void } = {};
+  public _proxiedData: {};
 
   public watch(property: string, callback: (newValue: any, oldValue: any) => void): void {
-    let keys: string[];
-
-    const traverseNestedObject = (key: string): void => {
-      if (!this.watchers[key]) {
-        this.watchers[key] = callback;
-      }
-    }
-
-    if (property.includes(".")) {
-      keys = property.split(".");
-
-      for (let i = 0; i < keys.length; ++i) {
-        let key = keys[i];
-
-        if (this.context.refProxy[key] && typeof this.context.refProxy[key] === "object") {
-          traverseNestedObject(keys[i + keys.length - 1]);
-        }
-      }
-    } else {
-      if (!this.watchers[property]) {
-        this.watchers[property] = callback;
-      }
+    if (!this.watchers[property]) {
+      this.watchers[property] = callback;
     }
   }
 
   public _proxyHandler: ProxyHandler<{}> = {
-    get: (target: {}, key: string) => {
-      if (typeof target[key] === "object" && target[key] !== null) {
+    get: (target: {}, key: string): any => {
+      const value: any = target[key];
+
+      if (typeof value === "object" && value !== null) {
         return new Proxy(target[key], this._proxyHandler);
-      } else {
-        return target[key];
       }
+
+      return value;
     },
-    set: (target: {}, key: string, newValue: any, receiver: any) => {
-      if (typeof newValue === "object" && newValue !== null) {
-        newValue = new Proxy<{}>(target[key], this._proxyHandler);
-      }
+    set: (target: {}, key: string, newValue: any): boolean => {
+      const oldValue: any = target[key];
 
-      if (Array.isArray(newValue)) {
-        newValue = new Proxy<[]>(target[key], this._proxyHandler);
-      }
+      if (oldValue !== newValue) {
+        if (typeof newValue === "object" && newValue !== null) {
+          newValue = new Proxy<{}>(newValue, this._proxyHandler);
+        }
 
-      let oldValue = target[key];
-      target[key] = newValue;
-      this.context.data = target;
-      this.observeDataAttrs();
-
-      if (this.watchers[key]) {
-        this.watchers[key](newValue, oldValue);
+        target[key] = newValue;
+        this.observeComponentHTML();
+        this.triggerWatchers(key, newValue, oldValue);
       }
 
       return true;
     }
   }
 
-  public _proxiedData: {};
-
   public setInitialState(): void {
-    this.context._data = this.context.data;
     this._proxiedData = new Proxy<{}>(this.context.data, this._proxyHandler);
     this.context.refProxy = this._proxiedData;
-    this.observeDataAttrs();
+    this.observeComponentHTML();
+    this.observeWatchers();
   }
 
-  public observeDataAttrs(): void {
-    this.refDataNodeList = this.context.$root.querySelectorAll("[ref-data]");
+  public triggerWatchers(key: string, newValue: any, oldValue: any): void {
+    for (const [watchKey, callback] of Object.entries(this.watchers)) {
+      if (watchKey.includes(".")) {
+        let keys: string[] = watchKey.split(".");
 
-    if (this.refDataNodeList.length >= 1) {
-      for (let i = 0; i < this.refDataNodeList.length; ++i) {
-        let refDataNode: HTMLElement = this.refDataNodeList[i];
-        let refDataAttrValue: string = refDataNode.getAttribute("ref-data");
+        for (let i = 0; i < keys.length; ++i) {
+          let propKey: string = keys[i];
 
-        // Split the attribute value by dots to handle nested objects
-        let nestedKeys: string[] = refDataAttrValue.split(".");
-        let nestedValue: any = this._proxiedData;
-
-        // Traverse through the nested keys to get the final nested value
-        for (let j = 0; j < nestedKeys.length; j++) {
-          const key = nestedKeys[j];
-          if (nestedValue.hasOwnProperty(key)) {
-            nestedValue = nestedValue[key];
-          } else {
-            nestedValue = undefined;
-            break;
+          if (propKey === key) {
+            callback(newValue, oldValue);
           }
         }
+      } else {
+        if (this.watchers[key]) {
+          this.watchers[key](newValue, oldValue);
+        }
+      }
+    }
+  }
 
-        // Update the HTML element with the final nested value
+  public observeWatchers(): void {
+    this._watch = this.context.watch;
+
+    if (this._watch) {
+      for (const [key, value] of Object.entries(this._watch)) {
+        this.watch(key, value);
+      }
+    }
+  }
+
+  public observeComponentHTML(): void {
+    const observeDOM = (nodeList: NodeListOf<HTMLElement>) => {
+      nodeList = this.context.$root.querySelectorAll("[ref-data]");
+
+      const updateDOM = (refDataNode: HTMLElement, nestedValue: any): void => {
         try {
           if (refDataNode instanceof HTMLInputElement) {
             refDataNode.value = nestedValue.toString();
           } else {
-            refDataNode.textContent = nestedValue.toString();
+            if (refDataNode.hasAttribute("innerHTML")) {
+              refDataNode.innerHTML = nestedValue.toString();
+            } else {
+              refDataNode.textContent = nestedValue.toString();
+            }
           }
         } catch (err: any) {
           if (this.context.devMode) {
@@ -110,7 +101,33 @@ export default class StateHandler extends BaseComponent {
           }
         }
       }
+
+      if (nodeList.length >= 1) {
+        for (let i = 0; i < nodeList.length; ++i) {
+          let refDataNode: HTMLElement = nodeList[i];
+          let refDataAttrValue: string = refDataNode.getAttribute("ref-data");
+
+          // Split the attribute value by dots to handle nested objects
+          let nestedKeys: string[] = refDataAttrValue.split(".");
+          let nestedValue: any = this._proxiedData;
+
+          // Traverse through the nested keys to get the final nested value
+          for (let j = 0; j < nestedKeys.length; j++) {
+            const key = nestedKeys[j];
+            if (nestedValue.hasOwnProperty(key)) {
+              nestedValue = nestedValue[key];
+            } else {
+              nestedValue = undefined;
+              break;
+            }
+          }
+
+          // Update the HTML element with the final nested value
+          updateDOM(refDataNode, nestedValue);
+        }
+      }
     }
+    observeDOM(this.refDataNodeList);
   }
 
   public forceUpdate(): void {
