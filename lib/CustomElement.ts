@@ -4,7 +4,7 @@ import EventHandler from "./Components/EventHandler";
 import ShadowDOMHandler from "./Components/ShadowDOMHandler";
 import StateHandler from "./Components/StateHandler";
 import StyleHandler from "./Components/StyleHandler";
-import CustomHTMLElement from "./Classes/CustomHTMLElement";
+import ReactiveElement from "./Classes/ReactiveElement";
 import ICustomElement from "./Interfaces/ICustomElement";
 import ISetupConfig from "./Interfaces/ISetupConfig";
 import IStyleConfig from "./Interfaces/IStyleConfig";
@@ -19,14 +19,14 @@ const defaultConfig: ISetupConfig = {
   }
 }
 
-class CustomElement {
+class ReactiveElementLib {
   public static readonly AnimationHandler = AnimationHandler;
   public static readonly BaseHandler = BaseHandler;
   public static readonly EventHandler = EventHandler;
   public static readonly ShadowDOMHandler = ShadowDOMHandler;
   public static readonly StateHandler = StateHandler;
   public static readonly StyleHandler = StyleHandler;
-  public static readonly CustomHTMLElement = CustomHTMLElement;
+  public static readonly ReactiveElement = ReactiveElement;
   public static readonly defaultConfig: ISetupConfig = defaultConfig;
 }
 
@@ -47,7 +47,7 @@ export {
   StateHandler,
   AnimationHandler,
   EventHandler,
-  CustomHTMLElement,
+  ReactiveElement,
   ICustomElement,
   ISetupConfig,
   IStyleConfig,
@@ -56,4 +56,4 @@ export {
   DefineComponent
 };
 
-export default CustomElement;
+export default ReactiveElementLib;

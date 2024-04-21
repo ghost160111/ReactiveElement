@@ -1,3 +1,4 @@
+import { Routes } from './IRoutes';
 import IAnimationOptions from "./IAnimationOptions";
 import IComponentOptions from "./IComponentOptions";
 import ICustomElement from "./ICustomElement";
@@ -13,5 +14,6 @@ export {
   ISetupConfig,
   IStyleConfig,
   IEventMapKey,
-  IEventMapKeyList
+  IEventMapKeyList,
+  Routes
 };

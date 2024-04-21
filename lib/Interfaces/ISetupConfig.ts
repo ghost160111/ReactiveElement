@@ -6,4 +6,8 @@ export default interface ISetupConfig {
   shadowDOM?: boolean;
   animations?: IAnimationOptions;
   devMode?: boolean;
+  setFadeInTransition?: {
+    value: boolean;
+    duration?: number;
+  }
 };

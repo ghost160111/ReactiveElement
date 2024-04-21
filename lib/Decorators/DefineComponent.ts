@@ -12,7 +12,7 @@ const DefineComponent = (options: DefineComponentOptions): CallableFunction => {
   }
 
   return (target: CustomElementConstructor): void => {
-    if (composableObjects && composableObjects.length >= 1) {
+    if (composableObjects && composableObjects.length > 0) {
       Object.assign(target.prototype, ...composableObjects);
     }
 

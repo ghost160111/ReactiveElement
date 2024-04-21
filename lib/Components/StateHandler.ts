@@ -1,3 +1,4 @@
+import attributesMap from "../Constants/AttributesMap";
 import BaseComponent from "./BaseComponent";
 
 export default class StateHandler extends BaseComponent {
@@ -9,6 +10,7 @@ export default class StateHandler extends BaseComponent {
   public _watch: Record<string, (newValue: any, oldValue: any) => void>;
   public watchers: { [key: string]: (newValue: any, oldValue: any) => void } = {};
   public _proxiedData: {};
+  private attributesMap: Map<string, string> = attributesMap;
 
   public watch(property: string, callback: (newValue: any, oldValue: any) => void): void {
     if (!this.watchers[property]) {
@@ -16,7 +18,7 @@ export default class StateHandler extends BaseComponent {
     }
   }
 
-  public _proxyHandler: ProxyHandler<{}> = {
+  protected _proxyHandler: ProxyHandler<{}> = {
     get: (target: {}, key: string): any => {
       const value: any = target[key];
 
@@ -50,7 +52,7 @@ export default class StateHandler extends BaseComponent {
     this.observeWatchers();
   }
 
-  public triggerWatchers(key: string, newValue: any, oldValue: any): void {
+  protected triggerWatchers(key: string, newValue: any, oldValue: any): void {
     for (const [watchKey, callback] of Object.entries(this.watchers)) {
       if (watchKey.includes(".")) {
         let keys: string[] = watchKey.split(".");
@@ -70,7 +72,7 @@ export default class StateHandler extends BaseComponent {
     }
   }
 
-  public observeWatchers(): void {
+  protected observeWatchers(): void {
     this._watch = this.context.watch;
 
     if (this._watch) {
@@ -80,58 +82,127 @@ export default class StateHandler extends BaseComponent {
     }
   }
 
-  public observeComponentHTML(): void {
-    const observeDOM = (nodeList: NodeListOf<HTMLElement>) => {
-      nodeList = this.context.$root.querySelectorAll("[ref-data]");
+  protected getNestedValue(refAttrValue: string): any {
+    let nestedKeys: string[] = refAttrValue.split(".");
+    let nestedValue: any = this._proxiedData;
 
-      const updateDOM = (refDataNode: HTMLElement, nestedValue: any): void => {
-        try {
-          if (refDataNode instanceof HTMLInputElement) {
-            refDataNode.value = nestedValue.toString();
-          } else {
-            if (refDataNode.hasAttribute("innerHTML")) {
-              refDataNode.innerHTML = nestedValue.toString();
-            } else {
-              refDataNode.textContent = nestedValue.toString();
-            }
-          }
-        } catch (err: any) {
-          if (this.context.devMode) {
-            console.log(err);
-          }
-        }
-      }
+    for (let j = 0; j < nestedKeys.length; ++j) {
+      const key = nestedKeys[j];
 
-      if (nodeList.length >= 1) {
-        for (let i = 0; i < nodeList.length; ++i) {
-          let refDataNode: HTMLElement = nodeList[i];
-          let refDataAttrValue: string = refDataNode.getAttribute("ref-data");
-
-          // Split the attribute value by dots to handle nested objects
-          let nestedKeys: string[] = refDataAttrValue.split(".");
-          let nestedValue: any = this._proxiedData;
-
-          // Traverse through the nested keys to get the final nested value
-          for (let j = 0; j < nestedKeys.length; j++) {
-            const key = nestedKeys[j];
-            if (nestedValue.hasOwnProperty(key)) {
-              nestedValue = nestedValue[key];
-            } else {
-              nestedValue = undefined;
-              break;
-            }
-          }
-
-          // Update the HTML element with the final nested value
-          updateDOM(refDataNode, nestedValue);
-        }
+      if (nestedValue.hasOwnProperty(key)) {
+        nestedValue = nestedValue[key];
+      } else {
+        nestedValue = undefined;
+        break;
       }
     }
-    observeDOM(this.refDataNodeList);
+
+    return nestedValue;
+  }
+
+  protected updateRefDataNodes(nodeList: NodeListOf<HTMLElement>): void {
+    if (nodeList.length >= 1) {
+      for (let i = 0; i < nodeList.length; ++i) {
+        let refDataNode: HTMLElement = nodeList[i];
+        let refDataAttrValue: string = refDataNode.getAttribute("ref-data");
+
+        // Split the attribute value by dots to handle nested objects
+        let nestedKeys: string[] = refDataAttrValue.split(".");
+        let nestedValue: any = this._proxiedData;
+
+        // Traverse through the nested keys to get the final nested value
+        for (let j = 0; j < nestedKeys.length; ++j) {
+          const key = nestedKeys[j];
+          if (nestedValue.hasOwnProperty(key)) {
+            nestedValue = nestedValue[key];
+          } else {
+            nestedValue = undefined;
+            break;
+          }
+        }
+
+        // Update the HTML element with the final nested value
+        this.updateDOM(refDataNode, nestedValue);
+      }
+    }
+  }
+
+  protected updateDOM(refDataNode: HTMLElement, nestedValue: any): void {
+    try {
+      nestedValue = nestedValue.toString();
+
+      if (refDataNode instanceof HTMLButtonElement || refDataNode instanceof HTMLTextAreaElement) {
+        refDataNode.textContent = nestedValue;
+      } else {
+        if (!refDataNode.getAttribute("innerHTML")) {
+          refDataNode.textContent = nestedValue;
+        } else {
+          refDataNode.innerHTML = nestedValue;
+        }
+      }
+    } catch (err: any) {
+      if (this.context.devMode) {
+        console.log(err);
+      }
+    }
+  }
+
+  protected updateAttrDOM(): void {
+    try {
+      const rootChildren: HTMLCollection = this.context.$root.children;
+
+      const observeChildren = (children: HTMLCollection) => {
+        if (children.length === 0) {
+          return;
+        }
+
+        for (let i = 0; i < children.length; ++i) {
+          const child: Element = children[i];
+          const refAttrNameList: string[] = child.getAttributeNames();
+
+          for (let j = 0; j < refAttrNameList.length; ++j) {
+            const refAttrName: string = refAttrNameList[j];
+            const isAttrMapHasAttr: boolean = this.attributesMap.has(refAttrName);
+            const refAttrValue = child.getAttribute(refAttrName);
+
+            if (this.context.devMode) {
+              console.log(isAttrMapHasAttr, refAttrName, refAttrValue);
+            }
+
+            if (isAttrMapHasAttr) {
+              let nestedValue = this.getNestedValue(refAttrValue);
+
+              child.setAttribute(this.attributesMap.get(refAttrName), nestedValue);
+            }
+          }
+
+          if (child.children.length > 0) {
+            observeChildren(child.children);
+          }
+        }
+      };
+
+      if (rootChildren.length > 0) {
+        observeChildren(rootChildren);
+      }
+    } catch (err) {
+      if (this.context.devMode) {
+        console.error(err);
+      }
+    }
+  }
+
+  public observeComponentHTML(): void {
+    this.refDataNodeList = this.context.$root.querySelectorAll("[ref-data]");
+    const nodeList = this.refDataNodeList;
+
+    this.updateRefDataNodes(nodeList);
+    this.updateAttrDOM();
   }
 
   public forceUpdate(): void {
     this.cleanUpEvents();
+    this.context.eventHandler.unsubscribeEvents();
 
     let templateChildren = Array.from<HTMLCollection>(this.context.template.content.children);
     let rootChildren = Array.from<HTMLCollection>(this.context.$root.children);

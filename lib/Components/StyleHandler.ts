@@ -1,4 +1,5 @@
 import BaseComponent from "./BaseComponent";
+import margins from "../Utils/StyleMargins";
 
 type StyleSheet = {
   css: string;
@@ -20,7 +21,6 @@ export default class StyleHandler extends BaseComponent {
     super(context);
 
     this.hostStylesheet = new CSSStyleSheet();
-
     this.hostStylesheet.replaceSync(this.hostBaseStyle);
   }
 
@@ -48,6 +48,15 @@ export default class StyleHandler extends BaseComponent {
 
   public getImportedSASS(importedSASS: any): string {
     return importedSASS[0][1];
+  }
+
+  public setupMargins() {
+    const finalStyles = /*css*/`
+      :host { transition: all 0.3s ease !important; }
+      ${margins}
+    `;
+
+    this.hostStylesheet.replaceSync(finalStyles);
   }
 
   public disconnectedCallback(): void {

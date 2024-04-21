@@ -1,10 +1,18 @@
 export default class SharedState {
   public components: {};
+  public root: HTMLElement | null;
 
-  constructor() {
-    this.components = {}
+  constructor(rootElement?: HTMLElement | null) {
+    this.components = {};
+
+    if (!rootElement) throw Error("Root element is null, check your callstack, or the element just doesn't exist!");
+    this.root = rootElement;
   }
 
+  /**
+   * @description
+   * Most of the time, you won't need this method, because it is called automatically right in the base class (CustomHTMLElement)
+   */
   public setComponent(context: any, name: string): void {
     Object.defineProperty(this.components, name, {
       configurable: true,
