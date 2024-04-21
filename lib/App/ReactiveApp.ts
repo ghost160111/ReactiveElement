@@ -1,5 +1,5 @@
 import FadeTransition from "../../FadeTransition/FadeTransition";
-import { ReactiveElement } from "../CustomElement";
+import { ReactiveElement } from "../ReactiveElementLib";
 
 const Errors = {
   rootElementNotFound: "Root element wasn't found, it is null. Either it doesn't exist, nor it does exist, but there is inaccurate invocation in callstack.",

@@ -1,4 +1,4 @@
-import { BaseHandler, ShadowDOMHandler, StyleHandler } from "../CustomElement";
+import { BaseHandler, ShadowDOMHandler, StyleHandler } from "../ReactiveElementLib";
 
 export default interface ICustomElement {
   base: BaseHandler;

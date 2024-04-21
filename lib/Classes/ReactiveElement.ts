@@ -10,7 +10,7 @@ import {
   ICustomElement,
   ISetupConfig,
   defaultConfig
-} from "../CustomElement";
+} from "../ReactiveElementLib";
 import SharedState from "./SharedState";
 
 /**

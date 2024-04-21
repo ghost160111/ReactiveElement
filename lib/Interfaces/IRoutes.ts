@@ -1,4 +1,4 @@
-import { ReactiveElement } from "../CustomElement";
+import { ReactiveElement } from "../ReactiveElementLib";
 
 export interface Route {
   component: ReactiveElement;
