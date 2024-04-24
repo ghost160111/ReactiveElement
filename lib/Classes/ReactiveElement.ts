@@ -59,9 +59,14 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
   public refProxy: {};
   public watch: Watcher;
 
+  public props: {};
+
   constructor(setupConfig?: ISetupConfig, components?: {}) {
     super();
     this.data = {};
+    if (setupConfig && setupConfig.props) {
+      this.props = setupConfig.props;
+    }
     sharedState.setComponent(this, this.tagName.toLowerCase());
     this.constructComponent(setupConfig, components);
   }

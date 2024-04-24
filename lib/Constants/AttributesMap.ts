@@ -1,4 +1,4 @@
-const attributesMap: Map<string, string> = new Map([
+const AttributesMap: Map<string, string> = new Map([
   ["ref-accept", "accept"],
   ["ref-accept-charset", "accept-charset"],
   ["ref-accesskey", "accesskey"],
@@ -119,4 +119,4 @@ const attributesMap: Map<string, string> = new Map([
   ["ref-wrap", "wrap"]
 ]);
 
-export default attributesMap;
+export default AttributesMap;

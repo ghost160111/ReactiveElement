@@ -9,5 +9,6 @@ export default interface ISetupConfig {
   setFadeInTransition?: {
     value: boolean;
     duration?: number;
-  }
+  },
+  props?: {}
 };

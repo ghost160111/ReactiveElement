@@ -1,4 +1,4 @@
-import attributesMap from "../Constants/AttributesMap";
+import AttributesMap from "../Constants/AttributesMap";
 import BaseComponent from "./BaseComponent";
 
 export default class StateHandler extends BaseComponent {
@@ -10,7 +10,7 @@ export default class StateHandler extends BaseComponent {
   public _watch: Record<string, (newValue: any, oldValue: any) => void>;
   public watchers: { [key: string]: (newValue: any, oldValue: any) => void } = {};
   public _proxiedData: {};
-  private attributesMap: Map<string, string> = attributesMap;
+  private attributesMap: Map<string, string> = AttributesMap;
 
   public watch(property: string, callback: (newValue: any, oldValue: any) => void): void {
     if (!this.watchers[property]) {
@@ -106,22 +106,8 @@ export default class StateHandler extends BaseComponent {
         let refDataNode: HTMLElement = nodeList[i];
         let refDataAttrValue: string = refDataNode.getAttribute("ref-data");
 
-        // Split the attribute value by dots to handle nested objects
-        let nestedKeys: string[] = refDataAttrValue.split(".");
-        let nestedValue: any = this._proxiedData;
+        let nestedValue = this.getNestedValue(refDataAttrValue);
 
-        // Traverse through the nested keys to get the final nested value
-        for (let j = 0; j < nestedKeys.length; ++j) {
-          const key = nestedKeys[j];
-          if (nestedValue.hasOwnProperty(key)) {
-            nestedValue = nestedValue[key];
-          } else {
-            nestedValue = undefined;
-            break;
-          }
-        }
-
-        // Update the HTML element with the final nested value
         this.updateDOM(refDataNode, nestedValue);
       }
     }
@@ -134,10 +120,10 @@ export default class StateHandler extends BaseComponent {
       if (refDataNode instanceof HTMLButtonElement || refDataNode instanceof HTMLTextAreaElement) {
         refDataNode.textContent = nestedValue;
       } else {
-        if (!refDataNode.getAttribute("innerHTML")) {
-          refDataNode.textContent = nestedValue;
-        } else {
+        if (refDataNode.hasAttribute("set-html")) {
           refDataNode.innerHTML = nestedValue;
+        } else {
+          refDataNode.textContent = nestedValue;
         }
       }
     } catch (err: any) {

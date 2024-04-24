@@ -43,11 +43,12 @@ export default class EventHandler extends BaseComponent {
   public subscribe(object: ObjectElement, eventType: EventMapsObjectElement, eventListener: EventListener | CallableFunction, eventListenerOptions?: ObjectElementListenerOptions, ...parameters: any[]): EventHandler {
     let eventListenerName = eventListener.name;
     let eventListenerReference: EventListener = eventListener.bind(this.context, ...parameters);
-    let eventMapKeyOptionsRef: IEventMapKeyList = { eventType, object, parameters, eventListenerName };
+    let eventObjectRefName = object.toString() + "-" + eventListenerName;
+    let eventMapKeyOptionsRef: IEventMapKeyList = { eventType, object, parameters, eventListenerName, eventObjectRefName };
 
-    this.context.eventHandlers[eventListenerName] = new Map<IEventMapKey, EventListener>();
+    this.context.eventHandlers[eventObjectRefName] = new Map<IEventMapKey, EventListener>();
 
-    this.context.eventHandlers[eventListenerName].set(eventMapKeyOptionsRef, eventListenerReference);
+    this.context.eventHandlers[eventObjectRefName].set(eventMapKeyOptionsRef, eventListenerReference);
     this.eventMapKeyList.push(eventMapKeyOptionsRef);
 
     this.checkTypeSetEvent("addEventListener", object, eventType, eventListenerReference, eventListenerOptions);
@@ -55,8 +56,8 @@ export default class EventHandler extends BaseComponent {
     return this;
   }
 
-  public unsubscribe(object: ObjectElement, eventType: EventMapsObjectElement, eventListenerName: string): EventHandler {
-    for (const [key, eventListenerRef] of this.context.eventHandlers[eventListenerName]) {
+  public unsubscribe(object: ObjectElement, eventType: EventMapsObjectElement, eventObjectRefName: string): EventHandler {
+    for (const [key, eventListenerRef] of this.context.eventHandlers[eventObjectRefName]) {
       if (object === key["object"] && eventType === key["eventType"]) {
         this.checkTypeSetEvent("removeEventListener", object, eventType, eventListenerRef);
       }
@@ -68,7 +69,8 @@ export default class EventHandler extends BaseComponent {
   public unsubscribeEvents(): void {
     for (let i = 0; i < this.eventMapKeyList.length; ++i) {
       let eventMapKey = this.eventMapKeyList[i];
-      this.unsubscribe(eventMapKey.object, eventMapKey.eventType, eventMapKey.eventListenerName);
+      let { object, eventType, eventObjectRefName } = eventMapKey;
+      this.unsubscribe(object, eventType, eventObjectRefName);
     }
   }
 
