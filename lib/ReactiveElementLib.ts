@@ -30,7 +30,7 @@ class ReactiveElementLib {
   public static readonly defaultConfig: ISetupConfig = defaultConfig;
 }
 
-const DefineComponent = (tagName: string | IComponentOptions, componentClass?: CustomElementConstructor) => {
+const DefineComponent = (tagName: string | IComponentOptions, componentClass: CustomElementConstructor) => {
   if (typeof tagName === "string") {
     window.customElements.define(tagName, componentClass);
   }

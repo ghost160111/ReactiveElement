@@ -1,35 +1,7 @@
-import CustomElement, {
-  BaseHandler,
-  StyleHandler,
-  ShadowDOMHandler,
-  StateHandler,
-  AnimationHandler,
-  EventHandler,
-  CustomHTMLElement,
-  ICustomElement,
-  ISetupConfig,
-  IShadowDOMHandlerConfig,
-  IStyleConfig,
-  IComponentOptions,
-  defaultConfig,
-  DefineComponent
-} from "./lib/CustomElement/CustomElement.ts";
+import { ReactiveElement } from "./lib/ReactiveElementLib.ts";
+import DefineComponent from "./lib/Decorators/DefineComponent.ts";
 
 export {
-  BaseHandler,
-  StyleHandler,
-  ShadowDOMHandler,
-  StateHandler,
-  AnimationHandler,
-  EventHandler,
-  CustomHTMLElement,
-  ICustomElement,
-  ISetupConfig,
-  IShadowDOMHandlerConfig,
-  IStyleConfig,
-  IComponentOptions,
-  defaultConfig,
+  ReactiveElement,
   DefineComponent
-}
-
-export default CustomElement;
+};
