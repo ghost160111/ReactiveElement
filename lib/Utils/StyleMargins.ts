@@ -1,4 +1,6 @@
-const margins = /*css*/`
+import { StringMethods } from "./StringMethods";
+
+let marginsStyle: string = /*css*/`
   .mb-1 {
     margin-bottom: 0.0625rem !important;
   }
@@ -3999,5 +4001,7 @@ const margins = /*css*/`
     margin-right: 15.625rem !important;
   }
 `;
+
+let margins: string | undefined = StringMethods.setOneLineText(marginsStyle);
 
 export default margins;

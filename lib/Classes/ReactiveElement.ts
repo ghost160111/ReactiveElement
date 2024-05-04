@@ -1,7 +1,7 @@
-import FadeTransition from "../../FadeTransition/FadeTransition";
+import FadeTransition from "./FadeTransition";
 import PopupContentHandler from "../Components/PopupContentHandler";
 import {
-  BaseHandler,
+  DisconnectHandler,
   ShadowDOMHandler,
   StyleHandler,
   StateHandler,
@@ -34,32 +34,34 @@ export interface UpdateChangedOptions {
 export type Watcher = Record<string, (newValue: any, oldValue: any) => void>;
 
 export default class ReactiveElement extends HTMLElement implements ICustomElement {
-  public base: BaseHandler;
-  public styles?: StyleHandler;
+  //#region PUBLIC
+  public $root?: ShadowRoot;
+  public animationHandler?: AnimationHandler;
+  public componentID: string;
+  public components: Record<string, ReactiveElement>;
+  public data: {};
+  public disconnectHandler: DisconnectHandler;
+  public eventHandler?: EventHandler;
+  public eventHandlers: Record<string, Map<string | symbol, EventListener>>;
+  public fadeTransition: FadeTransition;
+  public popupContentHandler?: PopupContentHandler;
+  public props: {};
+  public refProxy: {};
   public shadowDOM?: ShadowDOMHandler;
   public stateHandler?: StateHandler;
-  public animationHandler?: AnimationHandler;
-  public eventHandler?: EventHandler;
-  public popupContentHandler?: PopupContentHandler;
-
-  public $root?: ShadowRoot;
+  public styles?: StyleHandler;
   public template: HTMLTemplateElement;
-  protected templateContent: string;
-  protected refs: {};
-  public componentID: string;
-  public eventHandlers: Record<string, Map<string | symbol, EventListener>>;
+  public templateContent: string;
+  public watch: Watcher;
+  //#endregion
 
+  //#region PROTECTED
   protected componentConfig: ISetupConfig;
   protected controller: AbortController;
-  protected components: Record<string, HTMLElement | InstanceType<CustomElementConstructor>>;
   protected devMode: boolean;
+  protected refs: Record<string, HTMLElement & NodeListOf<HTMLElement> & ReactiveElement>;
   protected sharedState: SharedState;
-
-  public data: {};
-  public refProxy: {};
-  public watch: Watcher;
-
-  public props: {};
+  //#endregion
 
   constructor(setupConfig?: ISetupConfig, components?: {}) {
     super();
@@ -71,6 +73,7 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
     this.constructComponent(setupConfig, components);
   }
 
+  //#region METHODS
   /**
    * @description
    * This method is responsible for bulding whole component from scratch.
@@ -118,7 +121,7 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
    * This method is responsible for defining web component's different instance objects and properties!
    */
   private setupHandlers(setupConfig?: ISetupConfig): void {
-    this.base = new BaseHandler(this);
+    this.disconnectHandler = new DisconnectHandler(this);
 
     this.setupConfig(setupConfig);
 
@@ -130,8 +133,6 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
 
   private setupConfig(setupConfig?: ISetupConfig): void {
     if (setupConfig) {
-      this.styles = new StyleHandler(this);
-
       if (setupConfig.animations) {
         this.animationHandler = new AnimationHandler(this);
 
@@ -141,12 +142,24 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
       }
 
       if (setupConfig.styles) {
-        if (setupConfig.styles.css || setupConfig.styles.sass) {
-          if (setupConfig.styles.adds) {
-            if (setupConfig.styles.adds.margins) {
-              this.styles.setupMargins();
+        this.styles = new StyleHandler(this);
+
+        if (setupConfig.styles.adds) {
+          if (setupConfig.styles.adds.margins) {
+            this.styles.setupMargins();
+          }
+        }
+
+        if (setupConfig.styles.links) {
+          if (setupConfig.styles.links.length >= 1) {
+            for (let i = 0; i < setupConfig.styles.links.length; ++i) {
+              let styleID = setupConfig.styles.links[i];
+              this.sharedState.setLinkToRoot(this, styleID);
             }
           }
+        }
+
+        if (setupConfig.styles.css || setupConfig.styles.sass) {
           this.$root.adoptedStyleSheets = [ this.styles.hostStylesheet ];
 
           if (setupConfig.styles.css) {
@@ -177,7 +190,7 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
       }
 
       if (setupConfig.setFadeInTransition && setupConfig.setFadeInTransition.value) {
-        new FadeTransition(this.$root, setupConfig.setFadeInTransition.duration ?? 1000);
+        this.fadeTransition = new FadeTransition(this.$root, setupConfig.setFadeInTransition.duration ?? 1000);
       }
     }
   }
@@ -185,6 +198,9 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
   /**
    * @description
    * This method is CustomElements API's lifecycle method, that is called when element is added to document!
+   *
+   * @warning
+   * Never override this method unless you need to do so, by default you won't need to do that!
    */
   private connectedCallback(): void {
     this.setupHandlers(this.componentConfig);
@@ -195,9 +211,12 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
   /**
    * @description
    * This method is CustomElements API's lifecycle method, that is called when element is remove from document!
+   *
+   * @warning
+   * Never override this method, unless you need to do so, by default you won't need to do that!
    */
   private disconnectedCallback(): void {
-    this.base.destroy();
+    this.disconnectHandler.destroy();
     this.onDisconnected();
   }
 
@@ -214,6 +233,9 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
    * This method is lifycycle method of CustomElements API, and is called whenever returned attribute value from getter observedAttributes is changed!
    */
   public attributeChangedCallback(name: string, oldValue: any, newValue: any): void {
+    if (this.devMode) {
+      console.log(name, oldValue, newValue);
+    }
   }
 
   /**
@@ -317,4 +339,5 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
   public log(message: any, ...optionalParams: any[]): void {
     console.log(message, ...optionalParams);
   }
+  //#endregion
 }

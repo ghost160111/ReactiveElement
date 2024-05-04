@@ -1,9 +1,13 @@
-const clamp = (value: number, min?: number, max?: number): number => {
-  if (value < min) {
+const clamp = (value: number, min?: number, max?: number): number | undefined => {
+  if (min && value < min) {
     return min;
-  } else if (value > max) {
+  }
+
+  if (max && value > max) {
     return max;
-  } else if (min <= value && value <= max) {
+  }
+
+  if (min && max && min <= value && value <= max) {
     return value;
   }
 }

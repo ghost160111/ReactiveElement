@@ -22,11 +22,15 @@ export default class MathUtil {
   }
 
   public static clamp(value: number, min?: number, max?: number) {
-    if (value < min) {
+    if (min && value < min) {
       return min;
-    } else if (value > max) {
+    }
+
+    if (max && value > max) {
       return max;
-    } else if (min <= value && value <= max) {
+    }
+
+    if (min && max && min <= value && value <= max) {
       return value;
     }
   }

@@ -1,5 +1,5 @@
 import AnimationHandler from "./Components/AnimationHandler";
-import BaseHandler from "./Components/BaseHandler";
+import DisconnectHandler from "./Components/DisconnectHandler";
 import EventHandler from "./Components/EventHandler";
 import ShadowDOMHandler from "./Components/ShadowDOMHandler";
 import StateHandler from "./Components/StateHandler";
@@ -21,7 +21,7 @@ const defaultConfig: ISetupConfig = {
 
 class ReactiveElementLib {
   public static readonly AnimationHandler = AnimationHandler;
-  public static readonly BaseHandler = BaseHandler;
+  public static readonly DisconnectHandler = DisconnectHandler;
   public static readonly EventHandler = EventHandler;
   public static readonly ShadowDOMHandler = ShadowDOMHandler;
   public static readonly StateHandler = StateHandler;
@@ -30,7 +30,7 @@ class ReactiveElementLib {
   public static readonly defaultConfig: ISetupConfig = defaultConfig;
 }
 
-const DefineComponent = (tagName: string | IComponentOptions, componentClass: CustomElementConstructor) => {
+const DefineComponent = (tagName: string | IComponentOptions, componentClass?: CustomElementConstructor) => {
   if (typeof tagName === "string") {
     window.customElements.define(tagName, componentClass);
   }
@@ -41,7 +41,7 @@ const DefineComponent = (tagName: string | IComponentOptions, componentClass: Cu
 };
 
 export {
-  BaseHandler,
+  DisconnectHandler,
   StyleHandler,
   ShadowDOMHandler,
   StateHandler,
