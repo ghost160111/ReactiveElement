@@ -3,8 +3,8 @@ import BaseComponent from "./BaseComponent";
 export type ObjectOptions = PropertyDescriptor & ThisType<any>;
 
 export default class ShadowDOMHandler extends BaseComponent {
-  public refs: Record<string, HTMLElement> | null;
-  protected refNodeList: NodeListOf<HTMLElement> | null;
+  public refs: Record<string, HTMLElement>;
+  protected refNodeList: NodeListOf<HTMLElement>;
   protected observer: MutationObserver;
 
   constructor(context: any) {
@@ -17,11 +17,11 @@ export default class ShadowDOMHandler extends BaseComponent {
     this.refNodeList = null;
     this.refNodeList = this.context.$root.querySelectorAll("[ref]");
 
-    if (this.refNodeList && this.refNodeList.length > 0) {
+    if (this.refNodeList.length > 0) {
       for (let i: number = 0; i < this.refNodeList.length; ++i) {
-        let refNode: HTMLElement = this.refNodeList[i];
-        let refNodeAttrValue: any = refNode.getAttribute("ref");
-        let tagNameNodeList: NodeListOf<HTMLElement> = this.context.$root.querySelectorAll(`[ref=${refNodeAttrValue}]`);
+        let refNode = this.refNodeList[i];
+        let refNodeAttrValue = refNode.getAttribute("ref");
+        let tagNameNodeList = this.context.$root.querySelectorAll(`[ref=${refNodeAttrValue}]`);
 
         if (tagNameNodeList.length > 1) {
           this.defineRefProp(refNodeAttrValue, tagNameNodeList);

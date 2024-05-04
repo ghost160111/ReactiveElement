@@ -27,7 +27,7 @@ export default class EventHandler extends BaseComponent {
   public eventMapList: Map<string, EventProperties>;
 
   protected checkTypeSetEvent(options: keyof AddOrRemoveEventListener, object: ObjectElement, eventType: EventMapsObjectElement, eventListenerReference: EventListener, eventListenerOptions?: boolean | AddEventListenerOptions): void {
-    const checkOptions = (setOrRemoveEventOption: keyof AddOrRemoveEventListener, eventListenerOptions?: ObjectElementListenerOptions): ObjectElementListenerOptions | undefined => {
+    const checkOptions = (setOrRemoveEventOption: keyof AddOrRemoveEventListener, eventListenerOptions?: ObjectElementListenerOptions): ObjectElementListenerOptions => {
       if (setOrRemoveEventOption === "addEventListener") {
         return eventListenerOptions;
       }

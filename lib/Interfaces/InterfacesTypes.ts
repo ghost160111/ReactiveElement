@@ -4,6 +4,8 @@ import IComponentOptions from "./IComponentOptions";
 import ICustomElement from "./ICustomElement";
 import ISetupConfig from "./ISetupConfig";
 import IStyleConfig from "./IStyleConfig";
+import IEventMapKey from "./IEventMapKey";
+import IEventMapKeyList from "./IEventMapKeyList";
 
 export {
   IAnimationOptions,
@@ -11,5 +13,7 @@ export {
   ICustomElement,
   ISetupConfig,
   IStyleConfig,
+  IEventMapKey,
+  IEventMapKeyList,
   Routes
 }

@@ -1,6 +1,6 @@
 import { StringMethods } from "./StringMethods";
 
-let FontsStyle: string = /*css*/`
+let Fonts: string = /*css*/`
   .hero,
   .h-xlarge,
   .h-large,
@@ -145,6 +145,6 @@ let FontsStyle: string = /*css*/`
   }
 `;
 
-let Fonts: string | undefined = StringMethods.setOneLineText(FontsStyle);
+Fonts = StringMethods.setOneLineText(Fonts);
 
 export default Fonts;

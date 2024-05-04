@@ -1,4 +1,4 @@
-export default class MathUtil {
+export default class Maths {
   public static add(...numbers: number[]): number {
     let sum: number = 0;
 
@@ -11,14 +11,19 @@ export default class MathUtil {
   }
 
   public static less(...numbers: number[]): number {
-    let lessResult: number = 0;
+    let result: number = 0;
 
     for (let i: number = 0; i < numbers.length; ++i) {
       let number = numbers[i];
-      lessResult -= number;
+      result += number;
     }
 
-    return lessResult;
+    return result;
+  }
+
+  public static random(max: number): number {
+    let randomNumber: number = Math.floor(Math.random() * max);
+    return randomNumber;
   }
 
   public static clamp(value: number, min?: number, max?: number) {
