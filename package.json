@@ -1,6 +1,6 @@
 {
   "name": "reactive-web-component",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "A lightweight library that shares extened custom elemnts a.k.a (web components) functionality with number of component handlers including reactive state handler that handles state of component dynamically, and updates only those parts of DOM where needed, and also natively integrated event handler that does a lot for you when you subscribe an event",
   "type": "module",
   "main": "ReactiveWebComponent.js",
