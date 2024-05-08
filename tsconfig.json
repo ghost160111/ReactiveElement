@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2023",
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "target": "ES2022"
   }
 }

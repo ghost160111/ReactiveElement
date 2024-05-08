@@ -1,4 +1,5 @@
 import FadeTransition from "../Classes/FadeTransition";
+import { sharedState } from "../Classes/ReactiveElement";
 import { ReactiveElement } from "../ReactiveElementLib";
 
 export const REACTIVE_APP_ERRORS = {
@@ -49,6 +50,8 @@ export default class ReactiveApp {
   }
 
   public setFadeTransition(component: ReactiveElement, duration?: number): void {
-    new FadeTransition(component.$root, duration);
+    let instance = new FadeTransition(component.$root, duration);
+    sharedState.setFadeTransitionInstance(Math.random().toString(16).slice(2), instance);
+    console.log(sharedState);
   }
 }

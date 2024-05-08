@@ -1,6 +1,7 @@
+import FadeTransition from "./FadeTransition";
 import ReactiveElement from "./ReactiveElement";
 
-const SharedStateErrors = {
+export const SharedStateErrors = {
   setUniqueID: "You need to set unique ID for Dynamic CSS reference list!",
   specifyURL: "You need to specify URL of the dynamic CSS link!"
 }
@@ -9,6 +10,7 @@ export default class SharedState {
   public components: {};
   public root: HTMLElement | null;
   public cssListURLMap: Map<string, string>;
+  public fTransitionMap: Map<string, FadeTransition>;
 
   constructor(rootElement?: HTMLElement | null) {
     this.components = {};
@@ -86,5 +88,14 @@ export default class SharedState {
         }
       }
     }
+  }
+
+  public setFadeTransitionInstance(id: string, instance: FadeTransition): void {
+    if (this.fTransitionMap.get(id)) {
+      console.warn("Map with the same id " + id + " was found, enter different id for your map element!");
+      return;
+    }
+
+    this.fTransitionMap.set(id, instance);
   }
 }
