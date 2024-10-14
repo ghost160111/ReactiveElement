@@ -1,7 +1,7 @@
 import IStyleConfig from "./IStyleConfig";
 import IAnimationOptions from "./IAnimationOptions";
 
-export default interface ISetupConfig {
+export default interface ISetupConfig<T_Props extends any = any> {
   styles?: IStyleConfig;
   shadowDOM?: boolean;
   animations?: IAnimationOptions;
@@ -10,5 +10,6 @@ export default interface ISetupConfig {
     value: boolean;
     duration?: number;
   },
-  props?: {}
+  props?: T_Props,
+  speechAPI?: boolean
 }

@@ -1,10 +1,10 @@
 import FadeTransition from "./FadeTransition";
-import PopupContentHandler from "../Components/PopupContentHandler";
 import {
   DisconnectHandler,
   ShadowDOMHandler,
   StyleHandler,
   StateHandler,
+  SpeechSynthesisHandler,
   AnimationHandler,
   EventHandler,
   ICustomElement,
@@ -33,44 +33,53 @@ export interface UpdateChangedOptions {
 
 export type Watcher = Record<string, (newValue: any, oldValue: any) => void>;
 
-export default class ReactiveElement extends HTMLElement implements ICustomElement {
-  //#region PUBLIC
+export default class ReactiveElement<T_State extends object = any, T_Props extends any = any> extends HTMLElement implements ICustomElement {
   public $root?: ShadowRoot;
   public animationHandler?: AnimationHandler;
   public componentID: string;
   public components: Record<string, ReactiveElement>;
-  public data: {};
+  public data: T_State;
   public disconnectHandler: DisconnectHandler;
   public eventHandler?: EventHandler;
   public eventHandlers: Record<string, Map<string | symbol, EventListener>>;
   public fadeTransition: FadeTransition;
-  public popupContentHandler?: PopupContentHandler;
-  public props: {};
-  public refProxy: {};
+  public props: T_Props;
+  public refProxy: T_State;
   public shadowDOM?: ShadowDOMHandler;
-  public stateHandler?: StateHandler;
+  public stateHandler?: StateHandler<T_State>;
+  public speechSynthesisHandler?: SpeechSynthesisHandler;
   public styles?: StyleHandler;
   public template: HTMLTemplateElement;
   public templateContent: string;
   public watch: Watcher;
-  //#endregion
+  public devMode: boolean;
+  public html: HTMLElement;
+  public refs: Record<string, HTMLElement & NodeListOf<HTMLElement> & ReactiveElement>;
+  public sharedState: SharedState;
+  public componentConfig: ISetupConfig<T_Props>;
+  public controller: AbortController;
 
-  //#region PROTECTED
-  protected componentConfig: ISetupConfig;
-  protected controller: AbortController;
-  protected devMode: boolean;
-  protected refs: Record<string, HTMLElement & NodeListOf<HTMLElement> & ReactiveElement>;
-  protected sharedState: SharedState;
-  //#endregion
-
-  constructor(setupConfig?: ISetupConfig, components?: {}) {
+  constructor(setupConfig?: ISetupConfig<T_Props>, components?: {}) {
     super();
-    this.data = {};
+    this.data = {} as T_State;
+    this.html = document.querySelector("html");
+
     if (setupConfig && setupConfig.props) {
       this.props = setupConfig.props;
     }
-    sharedState.setComponent(this, this.tagName.toLowerCase());
+
+    sharedState.setComponent<ReactiveElement>(this, this.tagName.toLowerCase());
     this.constructComponent(setupConfig, components);
+
+    ReactiveElement.setCount();
+  }
+
+  public static count: number = 0;
+  private static setCount(): void {
+    this.count++;
+  }
+  public static getCount(): number {
+    return this.count;
   }
 
   //#region METHODS
@@ -133,13 +142,13 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
 
   private setupConfig(setupConfig?: ISetupConfig): void {
     if (setupConfig) {
-      const { animations, styles, shadowDOM, devMode, setFadeInTransition } = setupConfig;
+      const { animations, styles, shadowDOM, devMode, setFadeInTransition, speechAPI } = setupConfig;
 
       if (animations) {
         this.animationHandler = new AnimationHandler(this);
 
         if (animations.setOpacityAnimation) {
-          this.animationHandler.setFadeAnimation();
+          this.animationHandler.setFadeAnimation(animations.duration);
         }
       }
 
@@ -190,12 +199,11 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
       if (setFadeInTransition && setFadeInTransition.value) {
         this.fadeTransition = new FadeTransition(this.$root, setFadeInTransition.duration ?? 1000);
       }
+
+      if (speechAPI) {
+        this.speechSynthesisHandler = new SpeechSynthesisHandler(this);
+      }
     }
-
-    this.stateHandler = new StateHandler(this);
-    this.stateHandler.setInitialState();
-
-    this.eventHandler = new EventHandler(this);
   }
 
   /**
@@ -341,6 +349,24 @@ export default class ReactiveElement extends HTMLElement implements ICustomEleme
    */
   public log(message: any, ...optionalParams: any[]): void {
     console.log(message, ...optionalParams);
+  }
+
+  /**
+   * @description
+   * Just debounces some action that should have some timing for performing final task.
+   */
+  public debounce(func: Function, delay: number): (...args: any[]) => void {
+    let timerId: any;
+
+    return (...args: any[]): void => {
+      const context: any = this;
+
+      clearTimeout(timerId);
+
+      timerId = setTimeout(() => {
+        func.apply(context, args);
+      }, delay);
+    };
   }
   //#endregion
 }

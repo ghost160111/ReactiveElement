@@ -52,6 +52,5 @@ export default class ReactiveApp {
   public setFadeTransition(component: ReactiveElement, duration?: number): void {
     let instance = new FadeTransition(component.$root, duration);
     sharedState.setFadeTransitionInstance(Math.random().toString(16).slice(2), instance);
-    console.log(sharedState);
   }
 }

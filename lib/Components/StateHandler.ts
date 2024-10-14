@@ -1,41 +1,39 @@
-import AttributesMap from "../Constants/AttributesMap";
 import BaseComponent from "./BaseComponent";
+import { REF_ATTRIBUTES_LIST, ATTRIBUTES_MAP } from "../Constants/AttributesMap";
+import { ReactiveElement } from "../ReactiveElementLib";
 
-export default class StateHandler extends BaseComponent {
-  constructor(context: any) {
-    super(context);
-    this.watchers = {};
-    this.attributesMap = AttributesMap;
-  }
+export interface RefModelEvents {
+  eventType: string;
+  function: Function;
+  target: HTMLElement;
+}
 
+export default class StateHandler<T_State extends object = any> extends BaseComponent<ReactiveElement> {
   public refDataNodeList: NodeListOf<HTMLElement>;
+  public refModelNodeList: NodeListOf<HTMLElement>;
   public _watch: Record<string, (newValue: any, oldValue: any) => void>;
   public watchers: { [key: string]: (newValue: any, oldValue: any) => void };
-  public _proxiedData: {};
+  public _proxiedData: T_State;
   private attributesMap: Map<string, string>;
+  public refModelEvents: Map<string, RefModelEvents>;
+  public attrObserver: MutationObserver;
 
-  public watch(property: string, callback: (newValue: any, oldValue: any) => void): void {
-    if (!this.watchers[property]) {
-      this.watchers[property] = callback;
-    }
-  }
-
-  protected _proxyHandler: ProxyHandler<{}> = {
-    get: (target: {}, key: string): any => {
+  protected _proxyHandler: ProxyHandler<T_State> = {
+    get: (target: any, key: string): any => {
       const value: any = target[key];
 
       if (typeof value === "object" && value !== null) {
-        return new Proxy(target[key], this._proxyHandler);
+        return new Proxy<T_State>(target[key], this._proxyHandler);
       }
 
       return value;
     },
-    set: (target: {}, key: string, newValue: any): boolean => {
+    set: (target: any, key: string, newValue: any): boolean => {
       const oldValue: any = target[key];
 
       if (oldValue !== newValue) {
         if (typeof newValue === "object" && newValue !== null) {
-          newValue = new Proxy<{}>(newValue, this._proxyHandler);
+          newValue = new Proxy<T_State>(newValue, this._proxyHandler);
         }
 
         target[key] = newValue;
@@ -47,11 +45,34 @@ export default class StateHandler extends BaseComponent {
     }
   }
 
+  constructor(context: ReactiveElement) {
+    super(context);
+    this.watchers = {};
+    this.attributesMap = ATTRIBUTES_MAP;
+    this.refModelEvents = new Map();
+  }
+
   public setInitialState(): void {
-    this._proxiedData = new Proxy<{}>(this.context.data, this._proxyHandler);
+    this._proxiedData = new Proxy<T_State>(this.context.data, this._proxyHandler);
     this.context.refProxy = this._proxiedData;
     this.observeComponentHTML();
     this.observeWatchers();
+
+    this.attrObserver = new MutationObserver(() => {
+      this.observeComponentHTML();
+    });
+
+    this.attrObserver.observe(this.context.$root, {
+      attributes: true,
+      attributeFilter: REF_ATTRIBUTES_LIST,
+      subtree: true
+    });
+  }
+
+  public watch(property: string, callback: (newValue: any, oldValue: any) => void): void {
+    if (!this.watchers[property]) {
+      this.watchers[property] = callback;
+    }
   }
 
   protected triggerWatchers(key: string, newValue: any, oldValue: any): void {
@@ -64,11 +85,13 @@ export default class StateHandler extends BaseComponent {
 
           if (propKey === key) {
             callback(newValue, oldValue);
+            break;
           }
         }
       } else {
-        if (this.watchers[key]) {
-          this.watchers[key](newValue, oldValue);
+        if (watchKey === key) {
+          callback(newValue, oldValue);
+          break;
         }
       }
     }
@@ -84,22 +107,132 @@ export default class StateHandler extends BaseComponent {
     }
   }
 
+  protected setNestedValue(refAttrValue: string, value: any): void {
+    let nestedKeys: string[] = refAttrValue.split(".");
+    let nestedValue: any = this._proxiedData;
+
+    try {
+      for (let j = 0; j < nestedKeys.length; ++j) {
+        let key = nestedKeys[j];
+
+        if (nestedValue.hasOwnProperty(key)) {
+          nestedValue[key] = value;
+        } else {
+          nestedValue[key] = undefined;
+          break;
+        }
+      }
+    } catch (err) {
+      if (this.context.devMode) {
+        console.error(err);
+      }
+    }
+  }
+
   protected getNestedValue(refAttrValue: string): any {
     let nestedKeys: string[] = refAttrValue.split(".");
     let nestedValue: any = this._proxiedData;
 
-    for (let j = 0; j < nestedKeys.length; ++j) {
-      const key = nestedKeys[j];
+    try {
+      for (let j = 0; j < nestedKeys.length; ++j) {
+        let key = nestedKeys[j];
 
-      if (nestedValue.hasOwnProperty(key)) {
-        nestedValue = nestedValue[key];
-      } else {
-        nestedValue = undefined;
-        break;
+        if (nestedValue.hasOwnProperty(key)) {
+          nestedValue = nestedValue[key];
+        } else {
+          nestedValue = undefined;
+          break;
+        }
+      }
+    } catch (err) {
+      if (this.context.devMode) {
+        console.error(err);
       }
     }
 
     return nestedValue;
+  }
+
+  protected updateRefModelNodes(nodeList: NodeListOf<HTMLElement>): void {
+    if (nodeList.length >= 1) {
+      for (let i = 0; i < nodeList.length; ++i) {
+        const refModelNode: HTMLElement = nodeList[i];
+
+        if (refModelNode instanceof HTMLInputElement || refModelNode instanceof HTMLTextAreaElement) {
+          const refModelNodeAttrValue: string = refModelNode.getAttribute("ref-model");
+
+          const refFunctionInput = (event: InputEvent): void => {
+            let input: HTMLInputElement = event.target as HTMLInputElement;
+
+            try {
+              this.setNestedValue(refModelNodeAttrValue, input.value);
+              // input.setAttribute("value", input.value);
+              // nodeList.forEach((node: HTMLInputElement) => node.value = input.value);
+            } catch (err) {
+              if (this.context.devMode) {
+                console.error(err);
+              }
+            }
+          }
+
+          const refFunctionChange = (event: Event): void => {
+            let input: HTMLInputElement = event.target as HTMLInputElement;
+            let value: any = null;
+
+            if (input.type === "file") {
+              value = input.files;
+            } else {
+              value = input.value;
+            }
+
+            try {
+              this.setNestedValue(refModelNodeAttrValue, value);
+            } catch (err) {
+              if (this.context.devMode) {
+                console.error(err);
+              }
+            }
+          }
+
+          const setInputTask = (): void => {
+            this.refModelEvents.set(refModelNodeAttrValue, {
+              eventType: "input",
+              function: refFunctionInput,
+              target: refModelNode
+            });
+            refModelNode.addEventListener("input", refFunctionInput);
+          }
+
+          const setChangeTask = (): void => {
+            this.refModelEvents.set(refModelNodeAttrValue, {
+              eventType: "change",
+              function: refFunctionChange,
+              target: refModelNode
+            });
+            refModelNode.addEventListener("change", refFunctionChange);
+          }
+
+          if (!this.refModelEvents.get(refModelNodeAttrValue)) {
+            if (refModelNode instanceof HTMLInputElement) {
+              switch (refModelNode.type) {
+                case "text":
+                case "phone":
+                case "number":
+                case "email":
+                case "tel":
+                  setInputTask();
+                  break;
+                case "file":
+                  setChangeTask();
+                  break;
+              }
+            } else if (refModelNode instanceof HTMLTextAreaElement) {
+              setInputTask();
+            }
+          }
+        }
+      }
+    }
   }
 
   protected updateRefDataNodes(nodeList: NodeListOf<HTMLElement>): void {
@@ -107,8 +240,7 @@ export default class StateHandler extends BaseComponent {
       for (let i = 0; i < nodeList.length; ++i) {
         let refDataNode: HTMLElement = nodeList[i];
         let refDataAttrValue: string = refDataNode.getAttribute("ref-data");
-
-        let nestedValue = this.getNestedValue(refDataAttrValue);
+        let nestedValue: any = this.getNestedValue(refDataAttrValue);
 
         this.updateDOM(refDataNode, nestedValue);
       }
@@ -119,14 +251,10 @@ export default class StateHandler extends BaseComponent {
     try {
       nestedValue = nestedValue.toString();
 
-      if (refDataNode instanceof HTMLButtonElement || refDataNode instanceof HTMLTextAreaElement) {
-        refDataNode.textContent = nestedValue;
+      if (refDataNode.hasAttribute("set-html")) {
+        refDataNode.innerHTML = nestedValue;
       } else {
-        if (refDataNode.hasAttribute("set-html")) {
-          refDataNode.innerHTML = nestedValue;
-        } else {
-          refDataNode.textContent = nestedValue;
-        }
+        refDataNode.textContent = nestedValue;
       }
     } catch (err: any) {
       if (this.context.devMode) {
@@ -151,7 +279,7 @@ export default class StateHandler extends BaseComponent {
           for (let j = 0; j < refAttrNameList.length; ++j) {
             const refAttrName: string = refAttrNameList[j];
             const isAttrMapHasAttr: boolean = this.attributesMap.has(refAttrName);
-            const refAttrValue = child.getAttribute(refAttrName);
+            const refAttrValue: string = child.getAttribute(refAttrName);
 
             if (this.context.devMode) {
               console.log(isAttrMapHasAttr, refAttrName, refAttrValue);
@@ -159,7 +287,6 @@ export default class StateHandler extends BaseComponent {
 
             if (isAttrMapHasAttr) {
               let nestedValue = this.getNestedValue(refAttrValue);
-
               child.setAttribute(this.attributesMap.get(refAttrName), nestedValue);
             }
           }
@@ -181,52 +308,12 @@ export default class StateHandler extends BaseComponent {
   }
 
   public observeComponentHTML(): void {
-    this.refDataNodeList = this.context.$root.querySelectorAll("[ref-data]");
-    const nodeList = this.refDataNodeList;
+    this.refDataNodeList = this.context.$root.querySelectorAll<HTMLElement>("[ref-data]");
+    this.refModelNodeList = this.context.$root.querySelectorAll<HTMLElement>("[ref-model]");
 
-    this.updateRefDataNodes(nodeList);
+    this.updateRefDataNodes(this.refDataNodeList);
+    this.updateRefModelNodes(this.refModelNodeList);
     this.updateAttrDOM();
-  }
-
-  /**
-   * @deprecated
-   * Not recommended for usage, as new method is being in development, and will be released soon.
-   */
-  public forceUpdate(): void {
-    this.cleanUpEvents();
-    this.context.eventHandler.unsubscribeEvents();
-
-    let templateChildren = Array.from<HTMLCollection>(this.context.template.content.children);
-    let rootChildren = Array.from<HTMLCollection>(this.context.$root.children);
-
-    for (let i: number = 0; i < templateChildren.length; ++i) {
-      let templateChild: HTMLCollection | HTMLElement = templateChildren[i];
-      let rootChild: HTMLCollection | HTMLElement = rootChildren[i];
-
-      rootChild["replaceWith"](templateChild);
-    }
-
-    this.updateRefs();
-    this.updateState();
-    this.updateEvents();
-  }
-
-  protected updateRefs(): void {
-    if (this.context.shadowDOM) {
-      this.context.shadowDOM.observeRefs();
-    }
-  }
-
-  protected updateState(): void {
-    if (this.context.stateHandler) {
-      this.context.stateHandler.setInitialState();
-    }
-  }
-
-  protected updateEvents(): void {
-    if (this.context.events) {
-      this.context.events();
-    }
   }
 
   public cleanUpEvents(): void {
@@ -239,5 +326,6 @@ export default class StateHandler extends BaseComponent {
     this._proxiedData = null;
     this.refDataNodeList = null;
     this.watchers = null;
+    this.attrObserver.disconnect();
   }
 }

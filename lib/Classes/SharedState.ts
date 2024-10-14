@@ -1,16 +1,19 @@
 import FadeTransition from "./FadeTransition";
 import ReactiveElement from "./ReactiveElement";
+import TabMouseHandler from "./TabMouseHandler";
 
-export const SharedStateErrors = {
+const SharedStateErrors = {
   setUniqueID: "You need to set unique ID for Dynamic CSS reference list!",
-  specifyURL: "You need to specify URL of the dynamic CSS link!"
+  specifyURL: "You need to specify URL of the dynamic CSS link!",
+  sameIdInMapDetected: (id: string) => "Map with the same id " + id + " was found, enter different id for your map element!"
 }
 
 export default class SharedState {
-  public components: {};
+  public components: Record<string, any>;
   public root: HTMLElement | null;
   public cssListURLMap: Map<string, string>;
   public fTransitionMap: Map<string, FadeTransition>;
+  public tabMouseHandler: TabMouseHandler;
 
   constructor(rootElement?: HTMLElement | null) {
     this.components = {};
@@ -18,42 +21,68 @@ export default class SharedState {
 
     if (!rootElement) throw Error("Root element is null, check your callstack, or the element just doesn't exist!");
     this.root = rootElement;
+
+    this.setTabMouseHandler();
   }
 
   /**
    * @description
    * Most of the time, you won't need this method, because it is called automatically right in the base class (ReactiveElement)
    */
-  public setComponent(context: ReactiveElement, name: string): void {
-    Object.defineProperty(this.components, name, {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: context
-    });
+  public setComponent<T>(context: T, name: string): void {
+    if (this.components[name]) {
+      let existingComponent: T | T[] = this.components[name];
 
-    if (context && context.refProxy) {
-      for (const [styleID] of this.cssListURLMap.entries()) {
-        Object.defineProperty(context, styleID, {
+      if (Array.isArray(existingComponent)) {
+        existingComponent.push(context);
+      } else if (existingComponent instanceof ReactiveElement) {
+        Object.defineProperty(this.components, name, {
           configurable: true,
           enumerable: true,
           writable: true,
-          value: false
+          value: [
+            existingComponent,
+            context
+          ]
         });
       }
+    } else {
+      Object.defineProperty(this.components, name, {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: context
+      });
     }
   }
 
-  public async getComponent(name: any): Promise<ReactiveElement> {
-    return new Promise<ReactiveElement>((resolve: (value: ReactiveElement) => void, reject: (reason?: any) => void): void => {
+  public async getComponent<T>(name: any): Promise<T> {
+    return await new Promise<T>((resolve: (value: T) => void, reject: (reason?: any) => void): void => {
       const checkComponent = (): void => {
-        if (this.components[name] !== undefined) {
-          resolve(this.components[name]);
+        let componentOrList: T = this.components[name];
+
+        if (componentOrList !== undefined) {
+          if (componentOrList instanceof ReactiveElement) {
+            resolve(componentOrList);
+          }
+
+          if (Array.isArray(componentOrList)) {
+            resolve(componentOrList);
+          }
         } else {
           setTimeout(checkComponent);
         }
       }
       checkComponent();
+    });
+  }
+
+  public async getAllComponents(): Promise<Record<string, any>> {
+    return await new Promise<Record<string, any>>((resolve: (value: Record<string, any>) => void, reject: (reason?: any) => void): void => {
+      const getList = (): void => {
+        resolve(this.components);
+      }
+      setTimeout(getList);
     });
   }
 
@@ -92,10 +121,20 @@ export default class SharedState {
 
   public setFadeTransitionInstance(id: string, instance: FadeTransition): void {
     if (this.fTransitionMap.get(id)) {
-      console.warn("Map with the same id " + id + " was found, enter different id for your map element!");
+      console.warn(SharedStateErrors.sameIdInMapDetected(id));
       return;
     }
 
     this.fTransitionMap.set(id, instance);
+  }
+
+  public setTabMouseHandler(): void {
+    this.tabMouseHandler = new TabMouseHandler(this);
+    this.tabMouseHandler.observeTabMouse();
+
+    window.addEventListener("beforeunload", () => {
+      alert("Removed events: [TabMouseHandler] component related event listeners...");
+      this.tabMouseHandler.onDisconnected();
+    });
   }
 }

@@ -1,10 +1,11 @@
+import { ReactiveElement } from "../ReactiveElementLib";
 import BaseComponent from "./BaseComponent";
 
 export type AnimationKeyframes = Keyframe[] | PropertyIndexedKeyframes;
 export type AnimationKeyframeOptions = number | KeyframeAnimationOptions;
 
-export default class AnimationHandler extends BaseComponent {
-  constructor(context: any) {
+export default class AnimationHandler extends BaseComponent<ReactiveElement> {
+  constructor(context: ReactiveElement) {
     super(context);
   }
 

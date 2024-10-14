@@ -1,6 +1,7 @@
+import { ReactiveElement } from "../ReactiveElementLib";
 import BaseComponent from "./BaseComponent";
 
-export type ObjectElement = string | symbol | HTMLElement | Document | Window | ShadowRoot;
+export type ObjectElement = string | HTMLElement | Document | Window | ShadowRoot;
 export type EventMapsObjectElement = keyof HTMLElementEventMap | keyof DocumentEventMap | keyof WindowEventMap | keyof ShadowRootEventMap;
 export type ObjectElementListenerOptions = boolean | AddEventListenerOptions;
 
@@ -17,8 +18,8 @@ export type EventProperties = {
   parameters?: any[];
 }
 
-export default class EventHandler extends BaseComponent {
-  constructor(context: any) {
+export default class EventHandler extends BaseComponent<ReactiveElement> {
+  constructor(context: ReactiveElement) {
     super(context);
 
     this.eventMapList = new Map<string, EventProperties>();
@@ -35,12 +36,14 @@ export default class EventHandler extends BaseComponent {
 
     if (object instanceof HTMLElement || object instanceof Window || object instanceof Document || object instanceof ShadowRoot) {
       object[options](eventType, eventListenerReference, checkOptions(options, eventListenerOptions));
-    } else if (typeof object === "string" || typeof object === "symbol") {
+    } else if (typeof object === "string") {
       if (this.context.shadowDOM.refs[object] instanceof NodeList) {
         this.context.shadowDOM.refs[object].forEach((node: Node) => {
           node[options](eventType, eventListenerReference, checkOptions(options, eventListenerOptions));
         });
+      // @ts-ignore
       } else if (this.context.shadowDOM.refs[object] instanceof HTMLElement) {
+        // @ts-ignore
         this.context.shadowDOM.refs[object][options](eventType, eventListenerReference, checkOptions(options, eventListenerOptions));
       }
     }
@@ -49,7 +52,7 @@ export default class EventHandler extends BaseComponent {
   public subscribe(object: ObjectElement, id: string, eventType: EventMapsObjectElement, eventListener: Function, eventListenerOptions?: ObjectElementListenerOptions, ...parameters: any[]): void {
     let eventListenerRef: EventListener = eventListener.bind(this.context, ...parameters);
 
-    if (this.eventMapList.get(id)) {
+    if (this.eventMapList.get(id) && this.context.devMode) {
       console.warn(`The id '${id}' is already assigned for event: ${this.eventMapList.get(id)}`);
     }
 

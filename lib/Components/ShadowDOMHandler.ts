@@ -1,27 +1,48 @@
+import { ReactiveElement } from "../ReactiveElementLib";
 import BaseComponent from "./BaseComponent";
 
 export type ObjectOptions = PropertyDescriptor & ThisType<any>;
 
-export default class ShadowDOMHandler extends BaseComponent {
-  public refs: Record<string, HTMLElement>;
+export default class ShadowDOMHandler extends BaseComponent<ReactiveElement> {
+  public refs: Record<string, HTMLElement & NodeListOf<HTMLElement> & ReactiveElement>;
   protected refNodeList: NodeListOf<HTMLElement>;
   protected observer: MutationObserver;
 
-  constructor(context: any) {
+  constructor(context: ReactiveElement) {
     super(context);
     this.refs = {};
     this.observeRefs();
+
+    this.mutationCallback = this.mutationCallback.bind(this);
+    this.observer = new MutationObserver(this.mutationCallback);
+
+    try {
+      this.observer.observe(this.context.$root, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  protected mutationCallback(mutations: MutationRecord[]): void {
+    this.observeRefs();
+    if (this.context.devMode) {
+      console.log(mutations);
+    }
   }
 
   public observeRefs(): void {
-    this.refNodeList = null;
+    this.refNodeList = undefined;
     this.refNodeList = this.context.$root.querySelectorAll("[ref]");
 
     if (this.refNodeList.length > 0) {
       for (let i: number = 0; i < this.refNodeList.length; ++i) {
         let refNode = this.refNodeList[i];
         let refNodeAttrValue = refNode.getAttribute("ref");
-        let tagNameNodeList = this.context.$root.querySelectorAll(`[ref=${refNodeAttrValue}]`);
+        let tagNameNodeList: HTMLElement | NodeListOf<HTMLElement> = this.context.$root.querySelectorAll(`[ref=${refNodeAttrValue}]`);
 
         if (tagNameNodeList.length > 1) {
           this.defineRefProp(refNodeAttrValue, tagNameNodeList);
@@ -35,12 +56,23 @@ export default class ShadowDOMHandler extends BaseComponent {
   }
 
   protected defineRefProp(propName: string, refNode: HTMLElement | NodeListOf<HTMLElement>, options?: ObjectOptions): void {
-    Object.defineProperty(this.refs, propName, options ?? {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: refNode
-    });
+    if (this.refs) {
+      Object.defineProperty(this.refs, propName, options ?? {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: refNode
+      });
+    } else {
+      setTimeout(() => {
+        Object.defineProperty(this.refs, propName, options ?? {
+          enumerable: true,
+          configurable: true,
+          writable: true,
+          value: refNode
+        });
+      }, 100);
+    }
   }
 
   public select(selector: string): HTMLElement | null {
@@ -77,5 +109,9 @@ export default class ShadowDOMHandler extends BaseComponent {
     this.refs = null;
     this.refNodeList = null;
     this.context.refs = {};
+
+    if (this.observer) {
+      this.observer.disconnect();
+    }
   }
 }

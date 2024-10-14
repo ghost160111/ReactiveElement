@@ -4,6 +4,7 @@ import EventHandler from "./Components/EventHandler";
 import ShadowDOMHandler from "./Components/ShadowDOMHandler";
 import StateHandler from "./Components/StateHandler";
 import StyleHandler from "./Components/StyleHandler";
+import SpeechSynthesisHandler from "./Components/SpeechSynthesisHandler";
 import ReactiveElement from "./Classes/ReactiveElement";
 import ICustomElement from "./Interfaces/ICustomElement";
 import ISetupConfig from "./Interfaces/ISetupConfig";
@@ -20,13 +21,14 @@ const defaultConfig: ISetupConfig = {
 }
 
 class ReactiveElementLib {
-  public static readonly AnimationHandler = AnimationHandler;
-  public static readonly DisconnectHandler = DisconnectHandler;
-  public static readonly EventHandler = EventHandler;
-  public static readonly ShadowDOMHandler = ShadowDOMHandler;
-  public static readonly StateHandler = StateHandler;
-  public static readonly StyleHandler = StyleHandler;
-  public static readonly ReactiveElement = ReactiveElement;
+  public static readonly AnimationHandler: typeof AnimationHandler = AnimationHandler;
+  public static readonly DisconnectHandler: typeof DisconnectHandler = DisconnectHandler;
+  public static readonly EventHandler: typeof EventHandler = EventHandler;
+  public static readonly ShadowDOMHandler: typeof ShadowDOMHandler = ShadowDOMHandler;
+  public static readonly StateHandler: typeof StateHandler = StateHandler;
+  public static readonly StyleHandler: typeof StyleHandler = StyleHandler;
+  public static readonly SpeechSynthesisHandler: typeof SpeechSynthesisHandler = SpeechSynthesisHandler;
+  public static readonly ReactiveElement: typeof ReactiveElement = ReactiveElement;
   public static readonly defaultConfig: ISetupConfig = defaultConfig;
 }
 
@@ -48,6 +50,7 @@ export {
   AnimationHandler,
   EventHandler,
   ReactiveElement,
+  SpeechSynthesisHandler,
   ICustomElement,
   ISetupConfig,
   IStyleConfig,
