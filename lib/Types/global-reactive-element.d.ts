@@ -1,3 +1,5 @@
+import { DisconnectHandler, ReactiveElement, ShadowDOMHandler, StyleHandler } from "../ReactiveElementLib";
+
 declare interface IAnimationOptions {
   setOpacityAnimation: boolean;
   duration?: number;
