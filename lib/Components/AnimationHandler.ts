@@ -5,12 +5,12 @@ export type AnimationKeyframes = Keyframe[] | PropertyIndexedKeyframes;
 export type AnimationKeyframeOptions = number | KeyframeAnimationOptions;
 
 export default class AnimationHandler extends BaseComponent<ReactiveElement> {
+  protected keyframes: AnimationKeyframes;
+  protected animOptions: AnimationKeyframeOptions;
+  
   constructor(context: ReactiveElement) {
     super(context);
   }
-
-  protected keyframes: AnimationKeyframes;
-  protected animOptions: AnimationKeyframeOptions;
 
   public setFadeAnimation(duration?: number): void {
     this.keyframes = [
