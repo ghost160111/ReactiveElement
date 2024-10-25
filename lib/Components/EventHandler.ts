@@ -19,13 +19,13 @@ export type EventProperties = {
 }
 
 export default class EventHandler extends BaseComponent<ReactiveElement> {
+  public eventMapList: Map<string, EventProperties>;
+  
   constructor(context: ReactiveElement) {
     super(context);
 
     this.eventMapList = new Map<string, EventProperties>();
   }
-
-  public eventMapList: Map<string, EventProperties>;
 
   protected checkTypeSetEvent(options: keyof AddOrRemoveEventListener, object: ObjectElement, eventType: EventMapsObjectElement, eventListenerReference: EventListener, eventListenerOptions?: boolean | AddEventListenerOptions): void {
     const checkOptions = (setOrRemoveEventOption: keyof AddOrRemoveEventListener, eventListenerOptions?: ObjectElementListenerOptions): ObjectElementListenerOptions => {
